@@ -1,82 +1,83 @@
 
-import React, { useState } from "react";
-import "./App.css";
+import React, { useEffect, useState } from "react";
+import "./index.css";
+
+const raridades = [
+  { nome: "Comum", cor: "#cccccc", limite: 0.1 },
+  { nome: "Incomum", cor: "#aaffaa", limite: 0.3 },
+  { nome: "Rara", cor: "#55aaff", limite: 0.6 },
+  { nome: "Épica", cor: "#aa55ff", limite: 1 },
+  { nome: "Lendária", cor: "#ffaa00", limite: 5 },
+  { nome: "Mítica", cor: "#ff55aa", limite: 20 },
+  { nome: "Antiga", cor: "#d4af37", limite: 50 },
+  { nome: "Exótica", cor: "#00ffff", limite: 100 },
+  { nome: "Divina", cor: "#ff0000", limite: 500 },
+  { nome: "Única", cor: "#000", limite: Infinity }
+];
+
+const moedas = [
+  { nome: "Dólar Americano", valor: 1.0, imagem: "https://upload.wikimedia.org/wikipedia/commons/4/41/US_one_dollar_bill%2C_obverse.jpg" },
+  { nome: "Euro", valor: 1.2, imagem: "https://upload.wikimedia.org/wikipedia/commons/6/65/Euro_banknotes_2002.jpg" },
+  { nome: "Iene Japonês", valor: 0.007, imagem: "https://upload.wikimedia.org/wikipedia/commons/7/79/1000_yen_banknote_2004.jpg" },
+  { nome: "Real Brasileiro", valor: 0.20, imagem: "https://upload.wikimedia.org/wikipedia/commons/f/fc/200_reais.jpg" },
+  { nome: "Libra Esterlina", valor: 1.3, imagem: "https://upload.wikimedia.org/wikipedia/commons/0/0b/New_20_Pound_note_%282020%29.jpg" }
+];
+
+function classificarRaridade(valor) {
+  return raridades.find(r => valor <= r.limite);
+}
 
 function App() {
-  const [inventario, setInventario] = useState([]);
-  const [saldo, setSaldo] = useState(0);
-  const [mensagem, setMensagem] = useState("");
-  const [moedaSelecionada1, setMoedaSelecionada1] = useState(null);
-  const [moedaSelecionada2, setMoedaSelecionada2] = useState(null);
+  const [result, setResult] = useState(null);
+  const [inventory, setInventory] = useState([]);
 
-  const moedasDisponiveis = [
-    { nome: "Dracma Grega", valor: 500, imagem: "https://en.ucoin.net/coin_photos/GR/32/32152.jpg" },
-    { nome: "Denário Romano", valor: 800, imagem: "https://en.ucoin.net/coin_photos/IT/65/65001.jpg" },
-    { nome: "Real Português Antigo", valor: 1000, imagem: "https://en.ucoin.net/coin_photos/PT/25/25001.jpg" },
-    { nome: "Libra Esterlina 1800", valor: 1200, imagem: "https://en.ucoin.net/coin_photos/GB/180/180001.jpg" }
-  ];
+  useEffect(() => {
+    const saved = localStorage.getItem("battlecoin-inventory");
+    if (saved) setInventory(JSON.parse(saved));
+  }, []);
 
-  const adicionarAoInventario = (moeda) => {
-    setInventario([...inventario, moeda]);
-  };
+  useEffect(() => {
+    localStorage.setItem("battlecoin-inventory", JSON.stringify(inventory));
+  }, [inventory]);
 
-  const venderMoeda = (index) => {
-    const moeda = inventario[index];
-    const novoInventario = [...inventario];
-    novoInventario.splice(index, 1);
-    setInventario(novoInventario);
-    const ganho = Math.floor(moeda.valor / 10);
-    setSaldo(saldo + ganho);
-    setMensagem(`Você vendeu ${moeda.nome} por ${ganho} coins.`);
-  };
-
-  const batalharMoedas = () => {
-    if (!moedaSelecionada1 || !moedaSelecionada2) {
-      setMensagem("Selecione duas moedas para batalhar.");
-      return;
-    }
-    const vencedor =
-      moedaSelecionada1.valor >= moedaSelecionada2.valor
-        ? moedaSelecionada1
-        : moedaSelecionada2;
-    setMensagem(`A moeda vencedora é: ${vencedor.nome}`);
+  const puxarMoeda = () => {
+    const moeda = moedas[Math.floor(Math.random() * moedas.length)];
+    setResult(moeda);
+    setInventory([...inventory, moeda]);
   };
 
   return (
-    <div className="App">
-      <h1>BattleCoin Histórico</h1>
-      <p>Saldo: {saldo} coins</p>
+    <div className="app-container">
+      <h1>BattleCoin</h1>
+      <button onClick={puxarMoeda}>Puxar Moeda</button>
 
-      <h2>Moedas disponíveis</h2>
-      <div className="moedas">
-        {moedasDisponiveis.map((moeda, index) => (
-          <div key={index} className="moeda">
-            <img src={moeda.imagem} alt={moeda.nome} height="100" />
-            <p>{moeda.nome}</p>
-            <p>Valor: {moeda.valor}</p>
-            <button onClick={() => adicionarAoInventario(moeda)}>
-              Adquirir
-            </button>
-          </div>
-        ))}
+      {result && (
+        <div className="moeda-destaque" style={{ borderColor: classificarRaridade(result.valor).cor }}>
+          <img src={result.imagem} alt={result.nome} />
+          <h2>{result.nome}</h2>
+          <p>Valor: ${result.valor.toFixed(2)}</p>
+          <span className="raridade" style={{ backgroundColor: classificarRaridade(result.valor).cor }}>
+            {classificarRaridade(result.valor).nome}
+          </span>
+        </div>
+      )}
+
+      <h2>Sua Coleção</h2>
+      <div className="colecao">
+        {inventory.map((moeda, index) => {
+          const raridade = classificarRaridade(moeda.valor);
+          return (
+            <div key={index} className="moeda" style={{ borderColor: raridade.cor }}>
+              <img src={moeda.imagem} alt={moeda.nome} />
+              <div className="info">
+                <strong>{moeda.nome}</strong>
+                <p>${moeda.valor.toFixed(2)}</p>
+                <span style={{ backgroundColor: raridade.cor }}>{raridade.nome}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
-
-      <h2>Inventário</h2>
-      <div className="moedas">
-        {inventario.map((moeda, index) => (
-          <div key={index} className="moeda">
-            <img src={moeda.imagem} alt={moeda.nome} height="100" />
-            <p>{moeda.nome}</p>
-            <p>Valor: {moeda.valor}</p>
-            <button onClick={() => setMoedaSelecionada1(moeda)}>Batalha 1</button>
-            <button onClick={() => setMoedaSelecionada2(moeda)}>Batalha 2</button>
-            <button onClick={() => venderMoeda(index)}>Vender</button>
-          </div>
-        ))}
-      </div>
-
-      <button onClick={batalharMoedas}>Iniciar Batalha</button>
-      <p>{mensagem}</p>
     </div>
   );
 }
